@@ -5,26 +5,60 @@ import MarkerIcon from '../node_modules/leaflet/dist/images/marker-icon.png'
 import MarkerShadow from '../node_modules/leaflet/dist/images/marker-shadow.png'
 import 'leaflet/dist/leaflet.css'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import axios from 'axios';
 
 const Map = () => {
 
-    const [coord, setCoord] = useState([51.505, -0.09])
+    interface Location {
+        formatted: string;
+        geometry: {
+          lat: number;
+          lng: number;
+        };
+      }
+
+    const [coord, setCoord] = useState([45.5017, -73.5673])
 
     const SearchLocation = () => {
+        const [location, setLocation] = useState('');
+        const [suggestions, setSuggestions] = useState<Location[]>([]);
+      
+        useEffect(() => {
+          if (location) {
+            const fetchSuggestions = async () => {
+              const response = await axios.get(`https://api.opencagedata.com/geocode/v1/json?q=${location}&key=YOUR_OPENCAGE_API_KEY`);
+              setSuggestions(response.data.results);
+            }
+      
+            fetchSuggestions();
+          } else {
+            setSuggestions([]);
+          }
+        }, [location]);
+      
+        const selectLocation = (location: Location) => {
+          setLocation(location.formatted);
+          setCoord([location.geometry.lat, location.geometry.lng]);
+          setSuggestions([]);
+        }
+      
         return (
-            <div className="search-location">
-                <div>
-                <label>Location:</label>
-                </div>
-                <div>
-                    <input type="text"
-                    className='bg-gray-700 rounded-lg p-2 w-large outline-none'
-                    />
-                </div>
-            </div>
+          <div className="search-location">
+            <input
+              type="text"
+              className='bg-gray-700 rounded-lg p-2 w-large outline-none'
+              value={location}
+              onChange={event => setLocation(event.target.value)}
+            />
+            {suggestions.map((suggestion, index) => (
+              <div key={index} onClick={() => selectLocation(suggestion)}>
+                {suggestion.formatted}
+              </div>
+            ))}
+          </div>
         )
-    }
+      }
 
     const GetMyLocation = () => {
         const getMyLocation = () => {
